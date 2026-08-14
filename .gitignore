@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+data/
+checkpoints/
+reports/
+*.history.json
+models/*.pt
+!models/README.md
+
