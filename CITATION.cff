@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software or model, please cite the associated paper and this software release."
+title: "SMICNN: Smooth-Maxout ICNN for the 12-D Lamination-Parameter Feasible Domain"
+type: software
+authors:
+  - family-names: Fan
+    given-names: Kuan
+    orcid: ""
+version: 1.0.0
+date-released: 2026-08-14
+repository-code: "https://github.com/LeVingBM/SMICNN-12D-LP-Constraint"
+license: MIT
+keywords:
+  - lamination parameters
+  - input convex neural network
+  - Minkowski gauge
+  - composite optimization
+  - feasible domain
+
