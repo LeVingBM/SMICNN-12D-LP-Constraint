@@ -1,4 +1,4 @@
-# Model card: `smicnn_12d_v1_no_softplus_no_safety_head.pt`
+# Model card: `smicnn_12d_v1_compact_uint8_storage.pt`
 
 ## Intended use
 
@@ -81,9 +81,26 @@ Recommended engineering workflow:
 
 ## Integrity
 
-The release checkpoint contains only the frozen base network and input scale.
-Historical optimizer state, the optional positive homogeneous safety head,
-threshold-hinge parameters, and final output Softplus are excluded. Numerical
-conversion from the archived base checkpoint was verified bit-for-bit on an
-independent random input batch (`max_abs_difference=0`).
+The recommended `v1.0.1` release checkpoint contains only the frozen base
+network and input scale. Its weight rows are stored with affine UINT8
+quantization and are reconstructed as FP32 tensors before inference. Historical
+optimizer state, the optional positive homogeneous safety head, threshold-hinge
+parameters, and final output Softplus are excluded.
 
+Against the archived FP32 checkpoint, 512 fixed random inputs gave an absolute
+output-difference mean of `1.603e-3`, p99 of `7.765e-3`, and maximum of
+`1.632e-2`. On an independent 2,000-ray StrictLP regression, the compact model
+retained passing fitting, classification, and gradient indicators:
+
+| Metric | Compact value | Requirement |
+|---|---:|---:|
+| BT MSE | 4.254e-5 | <= 8e-5 |
+| abs(BT bias) | 1.287e-3 | <= 2e-3 |
+| BT p99 | 0.02089 | <= 0.025 |
+| T MSE | 3.443e-5 | <= 1e-4 |
+| Sign | 0.99985 | >= 0.99 |
+| NearSign | 0.99950 | >= 0.98 |
+| Euler p99 | 0.01917 | <= 0.10 |
+| e_FD p99 | 0.00300 | <= 0.01 |
+
+The full `v1.0.0` FP32 checkpoint remains available as an archival reference.

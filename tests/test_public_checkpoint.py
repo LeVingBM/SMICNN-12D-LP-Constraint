@@ -14,6 +14,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from src import SmoothMaxICNN  # noqa: E402
+from src.checkpoint_io import decode_state_dict  # noqa: E402
 
 
 def main() -> None:
@@ -23,7 +24,7 @@ def main() -> None:
         type=Path,
         default=REPOSITORY_ROOT
         / "models"
-        / "smicnn_12d_v1_no_softplus_no_safety_head.pt",
+        / "smicnn_12d_v1_compact_uint8_storage.pt",
     )
     args = parser.parse_args()
 
@@ -38,13 +39,17 @@ def main() -> None:
         adaptive_pieces=int(architecture["adaptive_pieces"]),
         exact_pieces=int(architecture["exact_pieces"]),
     )
-    model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+    model.load_state_dict(decode_state_dict(checkpoint), strict=True)
     model.eval()
 
     with torch.no_grad():
         phi_at_origin = float(model(torch.zeros(1, 12)).item())
 
-    assert checkpoint["format_version"] == "smicnn-public-v1"
+    assert checkpoint["format_version"] in {
+        "smicnn-public-v1",
+        "smicnn-public-v1-fp16-storage",
+        "smicnn-public-v2-uint8-storage",
+    }
     assert architecture["output_softplus"] is False
     assert architecture["safety_head"] is False
     assert math.isfinite(phi_at_origin)

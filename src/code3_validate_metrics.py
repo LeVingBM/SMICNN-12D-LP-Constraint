@@ -22,8 +22,10 @@ from scipy.stats import beta
 
 try:  # Support both `python src/code3_...py` and `python -m src.code3_...`.
     from .code2_train_smicnn import SmoothMaxICNN
+    from .checkpoint_io import decode_state_dict
 except ImportError:
     from code2_train_smicnn import SmoothMaxICNN
+    from checkpoint_io import decode_state_dict
 
 
 FIT_THRESHOLDS = {
@@ -67,7 +69,7 @@ def load_model(checkpoint_path: str, device: torch.device):
         adaptive_pieces=int(architecture["adaptive_pieces"]),
         exact_pieces=int(architecture["exact_pieces"]),
     )
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(decode_state_dict(checkpoint))
     model.to(device).eval()
     x_scale = torch.as_tensor(checkpoint["x_scale"], dtype=torch.float32, device=device)
     return model, x_scale, architecture

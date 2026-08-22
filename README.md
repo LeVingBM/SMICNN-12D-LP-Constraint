@@ -29,14 +29,17 @@ SMICNN-12D-LP-Constraint/
 ├── src/
 │   ├── code1_generate_multisource_data.py  # Seven-source StrictLP data
 │   ├── code2_train_smicnn.py               # Four-stage SMICNN training
-│   └── code3_validate_metrics.py            # Manuscript evaluation metrics
+│   ├── code3_validate_metrics.py            # Manuscript evaluation metrics
+│   └── checkpoint_io.py                     # Full/compact checkpoint loader
 ├── models/
 │   ├── README.md                            # Model download and usage
 │   └── checksums.sha256                     # Release-asset checksum
 ├── docs/
 │   ├── DATA.md                              # Data definition and NPZ schema
 │   └── METRICS.md                           # Evaluation definitions/thresholds
-├── tools/export_public_checkpoint.py        # Transparent checkpoint exporter
+├── tools/
+│   ├── export_public_checkpoint.py          # Transparent FP32 exporter
+│   └── export_quantized_checkpoint.py       # Compact UINT8-storage exporter
 ├── tests/test_public_checkpoint.py           # Checkpoint integrity smoke test
 ├── MODEL_CARD.md
 ├── CITATION.cff
@@ -54,12 +57,14 @@ python -m pip install -r requirements.txt
 
 ## Download the frozen model
 
-The full FP32 checkpoint is about 671 MiB and is distributed as a GitHub
-Release asset rather than a normal Git object:
+The recommended `v1.0.1` checkpoint is about 180 MiB. It stores each weight row
+with affine UINT8 quantization and reconstructs FP32 weights before inference;
+the network architecture and evaluation API are unchanged. It is distributed
+as a GitHub Release asset rather than a normal Git object:
 
 ```bash
-curl -L -o models/smicnn_12d_v1_no_softplus_no_safety_head.pt \
-  https://github.com/LeVingBM/SMICNN-12D-LP-Constraint/releases/download/v1.0.0/smicnn_12d_v1_no_softplus_no_safety_head.pt
+curl -L -o models/smicnn_12d_v1_compact_uint8_storage.pt \
+  https://github.com/LeVingBM/SMICNN-12D-LP-Constraint/releases/download/v1.0.1/smicnn_12d_v1_compact_uint8_storage.pt
 ```
 
 Verify its SHA-256 checksum with `models/checksums.sha256`.
@@ -74,23 +79,13 @@ python tests/test_public_checkpoint.py
 
 ```python
 import torch
-from src import SmoothMaxICNN
+from src import load_smicnn_checkpoint
 
-checkpoint = torch.load(
-    "models/smicnn_12d_v1_no_softplus_no_safety_head.pt",
-    map_location="cpu",
-    weights_only=False,
+model, x_scale, metadata = load_smicnn_checkpoint(
+    "models/smicnn_12d_v1_compact_uint8_storage.pt"
 )
-cfg = checkpoint["architecture"]
-model = SmoothMaxICNN(
-    cfg["width"], cfg["depth"], cfg["pieces"], cfg["output_pieces"],
-    cfg["tau"], cfg["adaptive_pieces"], cfg["exact_pieces"],
-)
-model.load_state_dict(checkpoint["model_state_dict"])
-model.eval()
 
 V = torch.zeros(1, 12)  # replace with physical lamination parameters
-x_scale = torch.as_tensor(checkpoint["x_scale"])
 with torch.no_grad():
     phi = model(V / x_scale)
 
@@ -130,7 +125,7 @@ checkpoint with second-resolution timestamps.
 
 ```bash
 python src/code3_validate_metrics.py \
-  --checkpoint models/smicnn_12d_v1_no_softplus_no_safety_head.pt \
+  --checkpoint models/smicnn_12d_v1_compact_uint8_storage.pt \
   --data data/independent_test.npz \
   --output reports/independent_test_metrics.json \
   --rho 0.98 --device cuda
