@@ -53,14 +53,6 @@ W = {
     "HARD_TOP": 6000.0,
 }
 
-STAGE_CN = {
-    "Deep ICNN": "深层ICNN预训练",
-    "Adaptive direct supports": "自适应直接支撑",
-    "Hard direct supports": "精确困难支撑",
-    "Hard-mining": "困难样本精修",
-}
-
-
 def smooth_max(values: torch.Tensor, dim: int, tau: float) -> torch.Tensor:
     """Normalized log-mean-exp; it converges to max as tau approaches zero."""
     if tau <= 0.0:
@@ -372,8 +364,8 @@ def train_stage(
                 running[key] += value
         val_error = boundary_errors(model, validation, x_scale, device)
         record = {
-            "记录时间": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "训练阶段": STAGE_CN.get(name, name),
+            "recorded_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "training_stage": name,
             "stage": name,
             "epoch": epoch,
             **{key: value / args.steps_per_epoch for key, value in running.items()},
